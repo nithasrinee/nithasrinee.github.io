@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <title>ค้นหาที่นั่งในงาน</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    :root {
+      --bg-1: #f8f5ef;
+      --bg-2: #e8ddd2;
+      --ink: #1f1b1a;
+      --muted: #60564f;
+      --accent: #b2894c;
+      --accent-2: #8f6a35;
+      --card: rgba(255, 255, 255, 0.78);
+      --line: rgba(126, 97, 58, 0.25);
+      --ok-bg: rgba(248, 241, 232, 0.95);
+      --ok-bd: #c8a779;
+      --err-bg: rgba(255, 240, 240, 0.95);
+      --err-bd: #d49a9a;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Kanit", "Noto Sans Thai", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 12% 14%, rgba(212, 178, 131, 0.32) 0%, transparent 40%),
+        radial-gradient(circle at 82% 85%, rgba(158, 128, 80, 0.25) 0%, transparent 42%),
+        linear-gradient(145deg, var(--bg-1), var(--bg-2));
+      display: grid;
+      place-items: center;
+      padding: 24px;
+    }
+
+    .card {
+      width: 100%;
+      max-width: 760px;
+      background: var(--card);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.8);
+      border-radius: 24px;
+      box-shadow:
+        0 18px 50px rgba(54, 38, 20, 0.2),
+        inset 0 1px 0 rgba(255, 255, 255, 0.75);
+      padding: 30px 24px 24px;
+      animation: reveal 500ms ease-out both;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(1.5rem, 4.2vw, 2rem);
+      letter-spacing: 0.3px;
+      line-height: 1.2;
+      text-align: center;
+    }
+
+    .subtitle {
+      margin: 8px 0 22px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.98rem;
+    }
+
+    .search-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    input {
+      flex: 1;
+      border: 1.6px solid #cdb8a1;
+      border-radius: 14px;
+      padding: 12px 14px;
+      font: inherit;
+      font-size: 1rem;
+      color: var(--ink);
+      outline: none;
+      background: rgba(255, 255, 255, 0.85);
+      transition: border-color 200ms ease, box-shadow 200ms ease;
+    }
+
+    input:focus {
+      border-color: #b2894c;
+      box-shadow: 0 0 0 4px rgba(178, 137, 76, 0.2);
+    }
+
+    button {
+      border: none;
+      border-radius: 14px;
+      padding: 12px 18px;
+      min-width: 110px;
+      font: inherit;
+      font-weight: 600;
+      color: #ffffff;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      cursor: pointer;
+      transition: transform 160ms ease, box-shadow 160ms ease;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 18px rgba(111, 77, 37, 0.35);
+    }
+
+    button:active {
+      transform: translateY(0);
+      box-shadow: none;
+    }
+
+    .result {
+      margin-top: 16px;
+      min-height: 112px;
+      border-radius: 16px;
+      border: 1.5px solid var(--line);
+      padding: 14px 16px;
+      background: rgba(255, 255, 255, 0.62);
+      line-height: 1.6;
+      white-space: normal;
+    }
+
+    .result.ok {
+      background: var(--ok-bg);
+      border-color: var(--ok-bd);
+    }
+
+    .result.err {
+      background: var(--err-bg);
+      border-color: var(--err-bd);
+    }
+
+    .meta {
+      margin-top: 16px;
+      color: var(--muted);
+      text-align: center;
+      font-size: 0.9rem;
+    }
+
+    .pill {
+      display: inline-block;
+      margin: 0 4px;
+      padding: 2px 10px;
+      border-radius: 999px;
+      background: #f1e4d3;
+      color: #654729;
+      font-size: 0.84rem;
+    }
+
+    .table-wrap {
+      margin-top: 8px;
+      overflow-x: auto;
+      border-radius: 12px;
+      border: 1px solid rgba(126, 97, 58, 0.2);
+      background: rgba(255, 255, 255, 0.8);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 420px;
+    }
+
+    th,
+    td {
+      padding: 10px 12px;
+      text-align: left;
+      border-bottom: 1px solid rgba(126, 97, 58, 0.2);
+      font-size: 0.96rem;
+    }
+
+    th {
+      font-weight: 600;
+      color: #5e4425;
+      background: rgba(236, 221, 201, 0.65);
+    }
+
+    tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    .result-head {
+      margin-bottom: 8px;
+      color: #4f3a21;
+      font-weight: 600;
+    }
+
+    @keyframes reveal {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @media (max-width: 560px) {
+      .card {
+        padding: 22px 16px 18px;
+        border-radius: 18px;
+      }
+
+      .search-row {
+        flex-direction: column;
+      }
+
+      button {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="card">
+    <h1>ค้นหาหมายเลขโต๊ะของคุณในงาน</h1>
+    <p class="subtitle">พิมพ์ชื่อบางส่วนเพื่อค้นหาหมายเลขโต๊ะ</p>
+
+    <div class="search-row">
+      <input id="name" type="text" placeholder="ชื่อในระบบ เช่น nic หรือ นน" autocomplete="off">
+      <button id="searchBtn" type="button">ค้นหา</button>
+    </div>
+
+    <section id="result" class="result" aria-live="polite">
+    </section>
+  </main>
+
+  <script>
+    const rawGuestData = `
+Kids	YFU	1
+Sprite	YFU	1
+Fuse	YFU	1
+Parn	OSKN 34	1
+Win	OSKN 34	1
+James	OSKN 34	1
+Nicky	OSKN 34	1
+Aon	OSKN 34	1
+Time	OSKN 34	1
+Nat	OSKN 34	1
+Nam	ญาติเจ้าบ่าว	2
+Ryan	ญาติเจ้าบ่าว	2
+Charlie	ญาติเจ้าบ่าว	2
+เนติ์	ญาติเจ้าบ่าว	2
+Well	ครอบครัวเจ้าบ่าว	2
+ปอ	ญาติเจ้าบ่าว	2
+Dream	ครอบครัวเจ้าบ่าว	2
+Papa	ครอบครัวเจ้าบ่าว	3
+Mama	ครอบครัวเจ้าบ่าว	3
+หนุ่ย	ญาติเจ้าบ่าว	3
+ชา	ญาติเจ้าบ่าว	3
+แฟนลุงชา	ญาติเจ้าบ่าว	3
+ตุ๋ม	ญาติเจ้าบ่าว	3
+แป๊ว	ญาติเจ้าบ่าว	3
+เหน่ง	ญาติเจ้าบ่าว	3
+น้อง	ญาติเจ้าบ่าว	3
+Nasa	OSKN 34	4
+Noon	OSKN 34	4
+Mook	OSKN 34	4
+Aim	OSKN 35	4
+Aime	OSKN 35	4
+Fon	OSKN 35	4
+Mildsrp	OSKN 35	4
+May	OSKN 35	4
+Neptune	OSKN 35	4
+Ploy	OSKN 35	4
+Chok	OSKN 35	5
+Art	OSKN 35	5
+Khem	OSKN 35	5
+Tonson	OSKN 35	5
+First	OSKN 35	5
+Land	OSKN 35	5
+Dear	OSKN 35	5
+Jien	OSKN 35	5
+Gap	OSKN 35	5
+พิม	ญาติเจ้าบ่าว	6
+วัตร	ญาติเจ้าบ่าว	6
+นิว	ญาติเจ้าบ่าว	6
+อ๊อฟ	ญาติเจ้าบ่าว	6
+ก้อย	ญาติเจ้าบ่าว	6
+อั้ม	ญาติเจ้าบ่าว	6
+อุ๊	ญาติเจ้าบ่าว	6
+Sui	เตรียมพัฒน์	7
+Memee	เตรียมพัฒน์	7
+Preaw	เตรียมพัฒน์	7
+Kuang	เตรียมพัฒน์	7
+Tarchi	เตรียมพัฒน์	7
+Martin	เตรียมพัฒน์	7
+Bell	เตรียมพัฒน์	7
+แฟน Bell	เตรียมพัฒน์	7
+Mai	เตรียมพัฒน์	7
+Wass	เตรียมพัฒน์	7
+Fahsai	สารสาสน์วิเทศร่มเกล้า	8
+Kanoon	สารสาสน์วิเทศร่มเกล้า	8
+ป้าหนุ่ย	สารสาสน์วิเทศร่มเกล้า	8
+ลุงนุ	สารสาสน์วิเทศร่มเกล้า	8
+น้าหนิง	เตรียมพัฒน์	8
+Pinky	เตรียมพัฒน์	8
+Weng	เตรียมพัฒน์	8
+Minnie	Chula	8
+May	Chula	8
+Ik	Chula	8
+Tong	Group K	9
+Jame	Group K	9
+Chertam	Group K	9
+Nine	Group K	9
+Music	Group K	9
+Nutzia	Group K	9
+Pinn	Group K	9
+Jack	Group K	9
+Bank	Group K	9
+Boat	Group K	9
+Zehn	เตรียมพัฒน์	10
+Leena	เตรียมพัฒน์	10
+Atom	เตรียมพัฒน์	10
+Ting	เตรียมพัฒน์	10
+Ploy	เตรียมพัฒน์	10
+Fern	เตรียมพัฒน์	10
+Oobib	เตรียมพัฒน์	10
+Golf	เตรียมพัฒน์	10
+Titan	เตรียมพัฒน์	10
+Tree	Chula	11
+Kwan	Chula	11
+MayB	Chula	11
+Yaya	Chula	11
+Koko	Chula	11
+Praew	Chula	11
+Mayshi	Chula	11
+Pleum	Chula	11
+F	Chula	11
+Tan	Chula	11
+Park	Chula	12
+Mo	Chula	12
+Nice	Chula	12
+Eing	Chula	12
+Pim	Chula	12
+Noina	Chula	12
+NP	Chula	12
+Lita	Chula	12
+Bell	Chula	12
+Ohm	สารสาสน์วิเทศร่มเกล้า	13
+Nicky	สารสาสน์วิเทศร่มเกล้า	13
+แม่ Nicky	สารสาสน์วิเทศร่มเกล้า	13
+Por	สารสาสน์วิเทศร่มเกล้า	13
+แฟน Por	สารสาสน์วิเทศร่มเกล้า	13
+Por	เตรียมพัฒน์	13
+Mind	เตรียมพัฒน์	13
+แฟน Mind	เตรียมพัฒน์	13
+Cartoon	เตรียมพัฒน์	13
+Nice	เตรียมพัฒน์	13
+Maprang	สารสาสน์วิเทศมีนบุรี	14
+แฟน Maprang	สารสาสน์วิเทศมีนบุรี	14
+Fluke	สารสาสน์วิเทศมีนบุรี	14
+Dung	สารสาสน์วิเทศมีนบุรี	14
+Krit	สารสาสน์วิเทศมีนบุรี	14
+Q	สารสาสน์วิเทศมีนบุรี	14
+แฟน Q	สารสาสน์วิเทศมีนบุรี	14
+เต้	สารสาสน์วิเทศมีนบุรี	14
+Arm	สารสาสน์วิเทศมีนบุรี	14
+Stamp	สารสาสน์วิเทศมีนบุรี	14
+May	สารสาสน์วิเทศมีนบุรี	15
+Pear	สารสาสน์วิเทศมีนบุรี	15
+Kgam	สารสาสน์วิเทศมีนบุรี	15
+Michelle	สารสาสน์วิเทศมีนบุรี	15
+Jar	สารสาสน์วิเทศมีนบุรี	15
+Boos	เพื่อน KMITL	15
+แฟน Boos	เพื่อน KMITL	15
+Earn	เพื่อน KMITL	15
+แฟน Earn	เพื่อน KMITL	15
+May	เพื่อน KMITL	15
+น้ำหวาน	สารสาสน์วิเทศมีนบุรี	16
+Nui	สารสาสน์วิเทศมีนบุรี	16
+Gam	สารสาสน์วิเทศมีนบุรี	16
+Noon	สารสาสน์วิเทศมีนบุรี	16
+Meen	สารสาสน์วิเทศมีนบุรี	16
+Min	สารสาสน์วิเทศมีนบุรี	16
+Joey	สารสาสน์วิเทศมีนบุรี	16
+แฟน Joey	สารสาสน์วิเทศมีนบุรี	16
+Nine	สารสาสน์วิเทศมีนบุรี	16
+Art	สารสาสน์วิเทศมีนบุรี	16
+Mint	สารสาสน์วิเทศมีนบุรี	17
+Jang	สารสาสน์วิเทศมีนบุรี	17
+Bambie	สารสาสน์วิเทศมีนบุรี	17
+Fah	สารสาสน์วิเทศมีนบุรี	17
+Poom	สารสาสน์วิเทศมีนบุรี	17
+May Ort	เพื่อน KMITL	17
+แฟน May Ort	เพื่อน KMITL	17
+Ink	เพื่อน KMITL	17
+Pond	เพื่อน KMITL	17
+แฟน Pond	เพื่อน KMITL	17
+ปู่	ครอบครัวเสาวลักษณ์	18
+ย่า	ครอบครัวเสาวลักษณ์	18
+ป้ารี่	ครอบครัวเสาวลักษณ์	18
+ลุงเชน	ครอบครัวเสาวลักษณ์	18
+ป๊าแชมป์	ครอบครัวเสาวลักษณ์	18
+อาปิ้ง	ครอบครัวเสาวลักษณ์	18
+อากิ๊บ	ครอบครัวเสาวลักษณ์	18
+จีด้า	ครอบครัวเสาวลักษณ์	18
+จาก	ครอบครัวเสาวลักษณ์	18
+ปู่อี๊ด	ญาติเจ้าสาว	19
+ย่าอาด	ญาติเจ้าสาว	19
+ย่าอ๋อย	ญาติเจ้าสาว	19
+ย่ากุ๊ส	ญาติเจ้าสาว	19
+ปู่ตึ๋ง	ญาติเจ้าสาว	19
+ลุงเอ	ญาติเจ้าสาว	19
+แฟนลุงเอ	ญาติเจ้าสาว	19
+ลุงโอ	ญาติเจ้าสาว	19
+อาหน่อย	ญาติเจ้าสาว	19
+จีน	ญาติเจ้าสาว	19
+ลุงโบ	ญาติเจ้าสาว	20
+ป้าเป๊ก	ญาติเจ้าสาว	20
+ลุงบอล	ญาติเจ้าสาว	20
+ป้าเอ	ญาติเจ้าสาว	20
+ปู่โอ๋	ญาติเจ้าสาว	20
+ย่าเล็ก	ญาติเจ้าสาว	20
+Golf	ญาติเจ้าสาว	20
+Ning	ญาติเจ้าสาว	20
+Nex	ญาติเจ้าสาว	20
+Nilin	ญาติเจ้าสาว	20
+Mew	Jomo	21
+แฟน Mew	Jomo	21
+Prach	Jomo	21
+Omamz	Jomo	21
+Nut	Doppio Tech	21
+Kay	Doppio Tech	21
+Bee	Doppio Tech	21
+Orca	Doppio Tech	21
+Moo	Doppio Tech	21
+Oz	Doppio Tech	21
+Dew Awika	Doppio Tech	22
+Amp	Doppio Tech	22
+Pro	Doppio Tech	22
+Saw	Doppio Tech	22
+Saimorke	Doppio Tech	22
+Sae	Doppio Tech	22
+Noey	Doppio Tech	22
+แฟน Noey	Doppio Tech	22
+JaiJai	Doppio Tech	22
+Frong	Doppio Tech	22
+ป้าเกด	ญาติเจ้าสาว	23
+Jennie	ญาติเจ้าสาว	23
+Jing	ญาติเจ้าสาว	23
+Bank	ญาติเจ้าสาว	23
+แฟน Bank	ญาติเจ้าสาว	23
+Vicky	ญาติเจ้าสาว	23
+ข้าวหอม	ญาติเจ้าสาว	23
+ข้าวตัง	ญาติเจ้าสาว	23
+Ploen	ญาติเจ้าสาว	23
+TJ	ญาติเจ้าสาว	23
+Noei	Jomo	24
+แฟน Noei	Jomo	24
+Char	Doppio Tech	24
+Banky	Doppio Tech	24
+แฟนพี่ Banky	Doppio Tech	24
+Fame	Doppio Tech	24
+Nont	Doppio Tech	24
+June	Doppio Tech	24
+Jom	Doppio Tech	24
+Aoey	Doppio Tech	24
+Wa	Doppio Tech	25
+Jane	Doppio Tech	25
+Pound	Doppio Tech	25
+Kim	Doppio Tech	25
+PeiPei	Doppio Tech	25
+Pang	Doppio Tech	25
+Pois	Doppio Tech	25
+Joy	Doppio Tech	25
+Theem	Doppio Tech	25
+Emma	Doppio Tech	25
+Friend	Doppio Tech	26
+Mike	Lotus's team	26
+Chin	Lotus's team	26
+Tob	Lotus's team	26
+แฟนพี่ Tob	Lotus's team	26
+ลูกพี่ Tob	Lotus's team	26
+Big	Lotus's team	26
+แฟนพี่ Big	Lotus's team	26
+Program	Lotus's team	26
+Progress	Lotus's team	26
+Bond	Doppio Tech	27
+Kook	Doppio Tech	27
+Ice	Doppio Tech	27
+Peach	Doppio Tech	27
+Eve	Doppio Tech	27
+Knab	Doppio Tech	27
+Klung	Doppio Tech	27
+Dump	Doppio Tech	27
+Praew	Doppio Tech	27
+Geng	Doppio Tech	27
+Bew	CDS team	28
+KT	CDS team	28
+Nat	CDS team	28
+Tim	CDS team	28
+แฟน Tim	CDS team	28
+Zul	CDS team	28
+Zul's GF	CDS team	28
+Smile	CDS team	28
+Juii	CDS team	28
+Puen	CDS team	28
+Kun	รุ่นพี่ KMITL	29
+Dame	รุ่นพี่ KMITL	29
+New	รุ่นพี่ KMITL	29
+Max	รุ่นพี่ KMITL	29
+Pang	รุ่นพี่ KMITL	29
+Ice	รุ่นพี่ KMITL	29
+James	รุ่นพี่ KMITL	29
+Zone	Lotus's team	29
+Tu	Lotus's team	29
+Art	Lotus's team	29
+Game	Doppio Tech	30
+Best	Doppio Tech	30
+Tor	Doppio Tech	30
+New	Doppio Tech	30
+Plaifah	Doppio Tech	30
+Dew Saran	Doppio Tech	30
+Ome	Doppio Tech	30
+Ken	Doppio Tech	30
+Gift	Doppio Tech	30
+James	Doppio Tech	30
+Mint	CDS team	31
+Modia	CDS team	31
+Ta	CDS team	31
+Whan	CDS team	31
+Chong	CDS team	31
+Chong's Wife	CDS team	31
+Toey	CDS team	31
+Noat	CDS team	31
+mix	CDS team	31
+Jane	CDS team	31
+Mint	เพื่อน KMITL	32
+แฟน Mint	เพื่อน KMITL	32
+Jeffy	เพื่อน KMITL	32
+Irin	เพื่อน KMITL	32
+Shoei	เพื่อน KMITL	32
+Rayrai	เพื่อน KMITL	32
+Pete	เพื่อน KMITL	32
+Palm	เพื่อน KMITL	32
+Wz	เพื่อน KMITL	32
+Pob	เพื่อน KMITL	32
+Jean	รุ่นน้อง KMITL	33
+Fah	รุ่นน้อง KMITL	33
+Mind	รุ่นน้อง KMITL	33
+Phol	รุ่นน้อง KMITL	33
+Putter	รุ่นน้อง KMITL	33
+แฟน Putter	รุ่นน้อง KMITL	33
+Puifai	รุ่นน้อง KMITL	33
+Phufa	รุ่นน้อง KMITL	33
+Baiown	รุ่นน้อง KMITL	33
+Gam	รุ่นน้อง KMITL	33
+Faro	เพื่อน KMITL	34
+Scene	เพื่อน KMITL	34
+Pierce	เพื่อน KMITL	34
+Fah	เพื่อน KMITL	34
+Bean	เพื่อน KMITL	34
+Khla	เพื่อน KMITL	34
+Pang	เพื่อน KMITL	34
+Dear	เพื่อน KMITL	34
+Game	เพื่อน KMITL	34
+Kpun	เพื่อน KMITL	34
+Arm	เพื่อน KMITL	35
+Fluke	เพื่อน KMITL	35
+Non	เพื่อน KMITL	35
+Zone	เพื่อน KMITL	35
+Por	รุ่นพี่ KMITL	35
+M	รุ่นน้อง KMITL	35
+Fang	รุ่นน้อง KMITL	35
+แฟน Fang	รุ่นน้อง KMITL	35
+Neng	รุ่นน้อง KMITL	35
+Poom	รุ่นน้อง KMITL	35
+`;
+
+    const data = rawGuestData
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .map((line) => {
+        const columns = line.split(/\t+/).map((x) => x.trim()).filter(Boolean);
+
+        if (columns.length >= 3) {
+          const nickname = columns[0];
+          const table = columns[columns.length - 1];
+          const type = columns.slice(1, -1).join(" ");
+          return { nickname, type, table };
+        }
+
+        const fallbackMatch = line.match(/^(.*)\s+([^\s].*)\s+(\d+)$/);
+        if (fallbackMatch) {
+          const [, nickname, type, table] = fallbackMatch;
+          return { nickname: nickname.trim(), type: type.trim(), table: table.trim() };
+        }
+
+        return null;
+      })
+      .filter(Boolean);
+
+    const nameInput = document.getElementById("name");
+    const result = document.getElementById("result");
+    const searchBtn = document.getElementById("searchBtn");
+
+    const normalize = (value) => value.trim().toLowerCase();
+
+    function search() {
+      const input = normalize(nameInput.value);
+
+      if (!input) {
+        result.className = "result err";
+        result.textContent = "กรุณากรอกชื่อเล่นก่อนค้นหา";
+        return;
+      }
+
+      const foundList = data.filter((x) => normalize(x.nickname).includes(input));
+
+      if (foundList.length > 0) {
+        result.className = "result ok";
+        const rows = foundList
+          .map(
+            (item) => `
+              <tr>
+                <td>${item.nickname}</td>
+                <td>${item.type}</td>
+                <td>${item.table}</td>
+              </tr>
+            `
+          )
+          .join("");
+
+        result.innerHTML = `
+          <div class="result-head">พบข้อมูล ${foundList.length} รายการ</div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Nickname</th>
+                  <th>Type</th>
+                  <th>Table Number</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${rows}
+              </tbody>
+            </table>
+          </div>
+        `;
+      } else {
+        result.className = "result err";
+        result.textContent = "ไม่พบข้อมูลที่ตรงกับคำค้นหา";
+      }
+    }
+
+    searchBtn.addEventListener("click", search);
+    nameInput.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        search();
+      }
+    });
+  </script>
+</body>
+</html>
