@@ -39,6 +39,7 @@
     }
 
     .card {
+      position: relative;
       width: 100%;
       max-width: 760px;
       background: var(--card);
@@ -48,8 +49,22 @@
       box-shadow:
         0 18px 50px rgba(54, 38, 20, 0.2),
         inset 0 1px 0 rgba(255, 255, 255, 0.75);
-      padding: 30px 24px 24px;
+      padding: 56px 24px 24px;
       animation: reveal 500ms ease-out both;
+    }
+
+    .lang-toggle {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      min-width: 76px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-size: 0.86rem;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+      background: linear-gradient(135deg, #7e6038, #5d4528);
+      box-shadow: 0 6px 14px rgba(61, 42, 19, 0.3);
     }
 
     h1 {
@@ -203,7 +218,7 @@
 
     @media (max-width: 560px) {
       .card {
-        padding: 22px 16px 18px;
+        padding: 58px 16px 18px;
         border-radius: 18px;
       }
 
@@ -211,8 +226,23 @@
         flex-direction: column;
       }
 
-      button {
+      .search-row button {
         width: 100%;
+      }
+
+      .lang-toggle {
+        top: 12px;
+        right: 12px;
+      }
+
+      th,
+      td {
+        padding: 9px 10px;
+        font-size: 0.9rem;
+      }
+
+      table {
+        min-width: 360px;
       }
     }
   </style>
@@ -220,16 +250,16 @@
 
 <body>
   <main class="card">
-    <h1>ค้นหาหมายเลขโต๊ะของคุณในงาน</h1>
-    <p class="subtitle">พิมพ์ชื่อบางส่วนเพื่อค้นหาหมายเลขโต๊ะ</p>
+    <button id="langToggle" class="lang-toggle" type="button">EN</button>
+    <h1 id="title">ค้นหาหมายเลขโต๊ะของคุณในงาน</h1>
+    <p id="subtitle" class="subtitle">พิมพ์ชื่อเพื่อค้นหาหมายเลขโต๊ะ</p>
 
     <div class="search-row">
       <input id="name" type="text" placeholder="ชื่อในระบบ เช่น real หรือ angel" autocomplete="off">
       <button id="searchBtn" type="button">ค้นหา</button>
     </div>
 
-    <section id="result" class="result" aria-live="polite">
-    </section>
+    <section id="result" class="result" aria-live="polite"></section>
   </main>
 
   <script>
@@ -602,15 +632,70 @@ Poom	รุ่นน้อง KMITL	35
     const nameInput = document.getElementById("name");
     const result = document.getElementById("result");
     const searchBtn = document.getElementById("searchBtn");
+    const title = document.getElementById("title");
+    const subtitle = document.getElementById("subtitle");
+    const langToggle = document.getElementById("langToggle");
+
+    const i18n = {
+      th: {
+        pageTitle: "ค้นหาหมายเลขโต๊ะในงาน",
+        title: "ค้นหาหมายเลขโต๊ะของคุณในงาน",
+        subtitle: "พิมพ์ชื่อเพื่อค้นหาหมายเลขโต๊ะ",
+        placeholder: "ชื่อในระบบ เช่น real หรือ angel",
+        searchBtn: "ค้นหา",
+        toggle: "EN",
+        initial: "",
+        emptyInput: "กรุณากรอกชื่อก่อนค้นหา",
+        notFound: "ไม่พบข้อมูลที่ตรงกับคำค้นหา",
+        found: (count) => `พบข้อมูล ${count} รายการ`,
+        colNickname: "ชื่อ",
+        colType: "กลุ่ม",
+        colTable: "หมายเลขโต๊ะ"
+      },
+      en: {
+        pageTitle: "Wedding Table Number Finder",
+        title: "Find Your Table Number",
+        subtitle: "Type your name to search",
+        placeholder: "Name in system e.g. real or angel",
+        searchBtn: "Search",
+        toggle: "ไทย",
+        initial: "",
+        emptyInput: "Please enter a name before searching",
+        notFound: "No matching records found",
+        found: (count) => `Found ${count} result(s)`,
+        colNickname: "Name",
+        colType: "Group",
+        colTable: "Table Number"
+      }
+    };
+
+    let currentLang = "th";
 
     const normalize = (value) => value.trim().toLowerCase();
 
+    function applyLanguage() {
+      const t = i18n[currentLang];
+      document.documentElement.lang = currentLang === "th" ? "th" : "en";
+      document.title = t.pageTitle;
+      title.textContent = t.title;
+      subtitle.textContent = t.subtitle;
+      nameInput.placeholder = t.placeholder;
+      searchBtn.textContent = t.searchBtn;
+      langToggle.textContent = t.toggle;
+    }
+
+    function showInitialState() {
+      result.className = "result";
+      result.textContent = i18n[currentLang].initial;
+    }
+
     function search() {
       const input = normalize(nameInput.value);
+      const t = i18n[currentLang];
 
       if (!input) {
         result.className = "result err";
-        result.textContent = "กรุณากรอกชื่อเล่นก่อนค้นหา";
+        result.textContent = t.emptyInput;
         return;
       }
 
@@ -631,14 +716,14 @@ Poom	รุ่นน้อง KMITL	35
           .join("");
 
         result.innerHTML = `
-          <div class="result-head">พบข้อมูล ${foundList.length} รายการ</div>
+          <div class="result-head">${t.found(foundList.length)}</div>
           <div class="table-wrap">
             <table>
               <thead>
                 <tr>
-                  <th>Nickname</th>
-                  <th>Type</th>
-                  <th>Table Number</th>
+                  <th>${t.colNickname}</th>
+                  <th>${t.colType}</th>
+                  <th>${t.colTable}</th>
                 </tr>
               </thead>
               <tbody>
@@ -649,16 +734,30 @@ Poom	รุ่นน้อง KMITL	35
         `;
       } else {
         result.className = "result err";
-        result.textContent = "ไม่พบข้อมูลที่ตรงกับคำค้นหา";
+        result.textContent = t.notFound;
       }
     }
 
     searchBtn.addEventListener("click", search);
+    langToggle.addEventListener("click", () => {
+      currentLang = currentLang === "th" ? "en" : "th";
+      applyLanguage();
+
+      if (nameInput.value.trim()) {
+        search();
+      } else {
+        showInitialState();
+      }
+    });
+
     nameInput.addEventListener("keydown", (event) => {
       if (event.key === "Enter") {
         search();
       }
     });
+
+    applyLanguage();
+    showInitialState();
   </script>
 </body>
 </html>
