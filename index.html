@@ -27,6 +27,8 @@
     body {
       margin: 0;
       min-height: 100vh;
+      width: 100%;
+      overflow-x: hidden;
       font-family: "Kanit", "Noto Sans Thai", sans-serif;
       color: var(--ink);
       background:
@@ -169,7 +171,10 @@
 
     .table-wrap {
       margin-top: 8px;
+      max-width: 100%;
       overflow-x: auto;
+      overscroll-behavior-x: contain;
+      -webkit-overflow-scrolling: touch;
       border-radius: 12px;
       border: 1px solid rgba(126, 97, 58, 0.2);
       background: rgba(255, 255, 255, 0.8);
@@ -224,8 +229,10 @@
 
       .search-row {
         flex-direction: column;
+        align-items: stretch;
       }
 
+      .search-row input,
       .search-row button {
         width: 100%;
       }
@@ -639,7 +646,7 @@ Poom	รุ่นน้อง KMITL	35
     const i18n = {
       th: {
         pageTitle: "ค้นหาหมายเลขโต๊ะในงาน",
-        title: "ค้นหาหมายเลขโต๊ะของคุณในงาน",
+        title: "ค้นหาหมายเลขโต๊ะของคุณ",
         subtitle: "พิมพ์ชื่อเพื่อค้นหาหมายเลขโต๊ะ",
         placeholder: "ชื่อในระบบ เช่น real หรือ angel",
         searchBtn: "ค้นหา",
