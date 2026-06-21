@@ -215,10 +215,27 @@
       background: rgba(236, 221, 201, 0.65);
     }
 
-    th:nth-child(5),
-    td:nth-child(5) {
+    th:nth-child(4),
+    td:nth-child(4) {
       text-align: center;
       font-variant-numeric: tabular-nums;
+    }
+
+    .team-block {
+      margin-top: 12px;
+    }
+
+    .team-title {
+      margin: 0;
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #4f3a21;
+    }
+
+    .empty-row {
+      text-align: center;
+      color: #736255;
+      font-style: italic;
     }
 
     tbody tr:last-child td {
@@ -698,8 +715,11 @@ Gam	เจ้าสาว	รุ่นน้อง KMITL	KMITL	35
         emptyInput: "กรุณากรอกชื่อก่อนค้นหา",
         notFound: "ไม่พบข้อมูลที่ตรงกับคำค้นหา",
         found: (count) => `พบข้อมูล ${count} รายการ`,
+        teamGroom: "ทีมเจ้าบ่าว",
+        teamBride: "ทีมเจ้าสาว",
+        teamDoppio: "ทีม Doppio",
+        noDataInTeam: "ไม่พบข้อมูลในทีมนี้",
         colName: "ชื่อ",
-        colTeam: "ทีม",
         colGroup: "กลุ่ม",
         colTable: "โต๊ะ",
         colTableNumber: "หมายเลขโต๊ะ"
@@ -715,8 +735,11 @@ Gam	เจ้าสาว	รุ่นน้อง KMITL	KMITL	35
         emptyInput: "Please enter a name before searching",
         notFound: "No matching records found",
         found: (count) => `Found ${count} result(s)`,
+        teamGroom: "Groom Team",
+        teamBride: "Bride Team",
+        teamDoppio: "Doppio Team",
+        noDataInTeam: "No data in this team",
         colName: "Name",
-        colTeam: "Team",
         colGroup: "Group",
         colTable: "Table",
         colTableNumber: "Table Number"
@@ -756,39 +779,58 @@ Gam	เจ้าสาว	รุ่นน้อง KMITL	KMITL	35
       const foundList = data.filter((x) => normalize(x.nickname).includes(input));
 
       if (foundList.length > 0) {
-        result.className = "result ok";
-        const rows = foundList
-          .map(
-            (item) => `
-              <tr>
-                <td>${item.nickname}</td>
-                <td>${item.team}</td>
-                <td>${item.group}</td>
-                <td>${item.table}</td>
-                <td>${item.tableNumber}</td>
-              </tr>
-            `
-          )
-          .join("");
+        const groomList = foundList.filter((x) => x.team === "เจ้าบ่าว");
+        const brideList = foundList.filter((x) => x.team === "เจ้าสาว");
+        const doppioList = foundList.filter((x) => normalize(x.team) === "doppio");
 
+        const renderTeamTable = (title, list) => {
+          const rows = list.length
+            ? list
+                .map(
+                  (item) => `
+                    <tr>
+                      <td>${item.nickname}</td>
+                      <td>${item.group}</td>
+                      <td>${item.table}</td>
+                      <td>${item.tableNumber}</td>
+                    </tr>
+                  `
+                )
+                .join("")
+            : `
+              <tr>
+                <td colspan="4" class="empty-row">${t.noDataInTeam}</td>
+              </tr>
+            `;
+
+          return `
+            <section class="team-block">
+              <p class="team-title">${title} (${list.length})</p>
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>${t.colName}</th>
+                      <th>${t.colGroup}</th>
+                      <th>${t.colTable}</th>
+                      <th>${t.colTableNumber}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${rows}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          `;
+        };
+
+        result.className = "result ok";
         result.innerHTML = `
           <div class="result-head">${t.found(foundList.length)}</div>
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>${t.colName}</th>
-                  <th>${t.colTeam}</th>
-                  <th>${t.colGroup}</th>
-                  <th>${t.colTable}</th>
-                  <th>${t.colTableNumber}</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${rows}
-              </tbody>
-            </table>
-          </div>
+          ${renderTeamTable(t.teamGroom, groomList)}
+          ${renderTeamTable(t.teamBride, brideList)}
+          ${renderTeamTable(t.teamDoppio, doppioList)}
         `;
       } else {
         result.className = "result err";
